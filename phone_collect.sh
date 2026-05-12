@@ -24,7 +24,7 @@ Required:
 Options:
   --duration SEC            phase duration, default 300
   --out DIR                 output root, default ./sessions
-  --iface IFACE             cellular iface, default auto-detect rmnet*/ccmni*/swlan*
+  --iface IFACE             iface or comma-separated ifaces, default auto-detect rmnet*/ccmni*/swlan*
   --target HOST             ping target, default 1.1.1.1
   --tcp-host HOST           TCP RTT target, default 1.1.1.1
   --tcp-port PORT           TCP RTT port, default 443
@@ -203,9 +203,16 @@ sample_netdev() {
     TS="$(now_epoch_ns)"
     MATCHED="$(
       awk -v ts="$TS" -v want="$CELL_IFACE" -F'[: ]+' '
+      BEGIN {
+        n = split(want, wanted, ",")
+        for (i = 1; i <= n; i++) {
+          gsub(/^ +| +$/, "", wanted[i])
+          if (wanted[i] != "") wants[wanted[i]] = 1
+        }
+      }
       NR > 2 {
         iface=$2
-        if (want == "" || iface == want) {
+        if (want == "" || iface in wants) {
           print ts "\t" iface "\t" $3 "\t" $4 "\t" $11 "\t" $12
         }
       }' /proc/net/dev

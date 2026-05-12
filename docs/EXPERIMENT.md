@@ -33,7 +33,14 @@ If you see `rmnet_data0`, use this in all measurement commands:
 If the active cellular interface is different, replace `rmnet_data0` below with
 that interface name.
 
-For example, on my *One Plus* phone, it's `rmnet_ipa0`
+Multiple cellular interfaces can be recorded with a comma-separated list. Do
+not include VPN interfaces such as `tun0`.
+
+```sh
+--iface rmnet_data3,rmnet_ipa0
+```
+
+For example, on my *One Plus* phone, it's `rmnet_ipa0` and `rmnet_data3`.
 
 ## 2. Airplane Baseline
 

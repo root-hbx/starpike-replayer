@@ -19,6 +19,14 @@ cat /proc/net/dev # 会显示 wlan0
 
 本次测试后面网口用 `--iface wlan0`
 
+蜂窝测试如果同时想记录多个 rmnet 接口，可以用逗号分隔，例如：
+
+```sh
+--iface rmnet_data3,rmnet_ipa0
+```
+
+不要把 VPN 虚拟口 `tun0` 加进去。
+
 ```sh
 sh phone_collect.sh --precheck
 ```
