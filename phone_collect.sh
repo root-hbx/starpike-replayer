@@ -67,7 +67,9 @@ have_cmd() {
 }
 
 run_root() {
-  if have_cmd su; then
+  if [ "$(id -u 2>/dev/null)" = "0" ]; then
+    sh -c "$1"
+  elif have_cmd su; then
     su -c "$1"
   else
     sh -c "$1"

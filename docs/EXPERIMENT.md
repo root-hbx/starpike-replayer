@@ -33,6 +33,8 @@ If you see `rmnet_data0`, use this in all measurement commands:
 If the active cellular interface is different, replace `rmnet_data0` below with
 that interface name.
 
+For example, on my *One Plus* phone, it's `rmnet_ipa0`
+
 ## 2. Airplane Baseline
 
 Manually enable airplane mode. Wait 30 seconds.
