@@ -36,7 +36,7 @@ RADIO_CONTROL_RE = re.compile(
     r"REGISTRATION|registration|attach|detach|PDP|PDN|allowedNetwork",
     re.I,
 )
-LOGCAT_TS_RE = re.compile(r"^(?P<ts>\d{9,}(?:\.\d+)?)\s+")
+LOGCAT_TS_RE = re.compile(r"^\s*(?P<ts>\d{9,}(?:\.\d+)?)\s+")
 SNAPSHOT_RE = re.compile(r"^### SNAPSHOT (?P<ts>\d+(?:\.\d+)?)")
 
 

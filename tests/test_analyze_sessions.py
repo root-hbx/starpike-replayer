@@ -32,9 +32,9 @@ class AnalyzeSessionsTest(unittest.TestCase):
                 encoding="utf-8",
             )
             (raw / "radio.log").write_text(
-                "1700000100.100000  1  1 I RILJ: setupDataCall\n"
-                "1700000100.200000  1  1 I Phone: ServiceState changed\n"
-                "1700000101.100000  1  1 I Phone: SignalStrength rsrp=-95\n",
+                "         1700000100.100000  1  1 I RILJ: setupDataCall\n"
+                "         1700000100.200000  1  1 I Phone: ServiceState changed\n"
+                "         1700000101.100000  1  1 I Phone: SignalStrength rsrp=-95\n",
                 encoding="utf-8",
             )
             (raw / "netdev.tsv").write_text(
