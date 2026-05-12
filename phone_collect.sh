@@ -273,11 +273,15 @@ start_workload() {
       if [ -z "$IPERF_SERVER" ]; then
         echo "dtc_iperf requires --iperf-server" >> "${RAW_DIR}/iperf3.log"
       elif have_cmd iperf3; then
+        IPERF_DURATION=$((DURATION - 2))
+        if [ "$IPERF_DURATION" -lt 1 ]; then
+          IPERF_DURATION="$DURATION"
+        fi
         if [ -n "$IPERF_BW" ]; then
-          iperf3 -c "$IPERF_SERVER" -t "$DURATION" -b "$IPERF_BW" -i 1 \
+          iperf3 -c "$IPERF_SERVER" -t "$IPERF_DURATION" -b "$IPERF_BW" -i 1 \
             --json > "${RAW_DIR}/iperf3.json" 2> "${RAW_DIR}/iperf3.log" &
         else
-          iperf3 -c "$IPERF_SERVER" -t "$DURATION" -i 1 \
+          iperf3 -c "$IPERF_SERVER" -t "$IPERF_DURATION" -i 1 \
             --json > "${RAW_DIR}/iperf3.json" 2> "${RAW_DIR}/iperf3.log" &
         fi
         PIDS="$PIDS $!"

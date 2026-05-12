@@ -19,3 +19,7 @@ MobileInsight-equivalent PHY/MAC/RLC/PDCP/RRC message rates.
 5. Plot Fig.7-like proxy-rate and CPU-overhead figures.
 
 See [docs/EXPERIMENT.md](docs/EXPERIMENT.md) for setup and details.
+
+See [docs/oneplus_base.md](docs/oneplus_base.md) for getting started.
+
+

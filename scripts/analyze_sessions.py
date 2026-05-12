@@ -345,6 +345,57 @@ def write_cpu_outputs(sessions: list[Path], out_dir: Path) -> None:
     (out_dir / "ap_cpu_delta_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
 
+def iperf_rows(session: Path) -> list[dict[str, str]]:
+    manifest = read_manifest(session)
+    path = session / "raw" / "iperf3.json"
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except json.JSONDecodeError:
+        return []
+
+    rows: list[dict[str, str]] = []
+    for interval in data.get("intervals", []):
+        summary = interval.get("sum", {})
+        start = float(summary.get("start", 0.0))
+        end = float(summary.get("end", start))
+        bps = float(summary.get("bits_per_second", 0.0))
+        rows.append(
+            {
+                "session": session.name,
+                "phase": manifest.get("phase", session.name),
+                "start_sec": f"{start:.6f}",
+                "end_sec": f"{end:.6f}",
+                "throughput_bps": f"{bps:.6f}",
+                "throughput_mbps": f"{bps / 1e6:.6f}",
+                "bytes": str(summary.get("bytes", "")),
+                "retransmits": str(summary.get("retransmits", "")),
+            }
+        )
+    return rows
+
+
+def write_iperf_outputs(sessions: list[Path], out_dir: Path) -> None:
+    rows: list[dict[str, str]] = []
+    for session in sessions:
+        rows.extend(iperf_rows(session))
+    with (out_dir / "iperf_timeseries.csv").open("w", encoding="utf-8", newline="") as fh:
+        fieldnames = [
+            "session",
+            "phase",
+            "start_sec",
+            "end_sec",
+            "throughput_bps",
+            "throughput_mbps",
+            "bytes",
+            "retransmits",
+        ]
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def summarize_cpu_delta(sessions: list[Path]) -> dict:
     by_phase: dict[str, list[float]] = defaultdict(list)
     for session in sessions:
@@ -449,6 +500,23 @@ def plot_outputs(out_dir: Path) -> None:
             plt.savefig(out_dir / "fig_ap_cpu_delta.pdf")
             plt.close()
 
+    iperf = out_dir / "iperf_timeseries.csv"
+    if iperf.exists():
+        rows = list(csv.DictReader(iperf.open(encoding="utf-8", newline="")))
+        if rows:
+            plt.figure(figsize=(8, 3))
+            for session in sorted({row["session"] for row in rows}):
+                subset = [row for row in rows if row["session"] == session]
+                xs = [(float(row["start_sec"]) + float(row["end_sec"])) / 2.0 for row in subset]
+                ys = [float(row["throughput_mbps"]) for row in subset]
+                plt.plot(xs, ys, marker="o", linewidth=1.2, markersize=2.5, label=session)
+            plt.xlabel("Time (second)")
+            plt.ylabel("Throughput (Mbps)")
+            plt.legend(fontsize=7)
+            plt.tight_layout()
+            plt.savefig(out_dir / "fig_iperf_throughput.pdf")
+            plt.close()
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -479,6 +547,7 @@ def main() -> int:
 
     combine_activity_csvs(per_session_outs, args.out)
     write_cpu_outputs(sessions, args.out)
+    write_iperf_outputs(sessions, args.out)
 
     metadata = {
         "proxy_categories": PROXY_CATEGORIES,
