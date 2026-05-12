@@ -117,6 +117,14 @@ precheck() {
   else
     echo "cellular_iface: not detected; pass --iface manually"
   fi
+  echo "netdev_snapshot:"
+  if [ "$(id -u 2>/dev/null)" = "0" ]; then
+    cat /proc/net/dev 2>&1
+  elif have_cmd su; then
+    su -c "cat /proc/net/dev" 2>&1
+  else
+    cat /proc/net/dev 2>&1
+  fi
 }
 
 if [ "$PRECHECK" = "1" ]; then
@@ -193,13 +201,20 @@ sample_netdev() {
   END=$((START_EPOCH + DURATION))
   while [ "$(now_epoch)" -le "$END" ]; do
     TS="$(now_epoch_ns)"
-    awk -v ts="$TS" -v want="$CELL_IFACE" -F'[: ]+' '
+    MATCHED="$(
+      awk -v ts="$TS" -v want="$CELL_IFACE" -F'[: ]+' '
       NR > 2 {
         iface=$2
         if (want == "" || iface == want) {
           print ts "\t" iface "\t" $3 "\t" $4 "\t" $11 "\t" $12
         }
-      }' /proc/net/dev >> "${RAW_DIR}/netdev.tsv"
+      }' /proc/net/dev
+    )"
+    if [ -n "$MATCHED" ]; then
+      echo "$MATCHED" >> "${RAW_DIR}/netdev.tsv"
+    else
+      echo "${TS} NETDEV_IFACE_MISSING iface=${CELL_IFACE}" >> "${RAW_DIR}/netdev.err"
+    fi
     sleep "$INTERVAL"
   done
 }
