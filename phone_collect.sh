@@ -202,7 +202,7 @@ sample_netdev() {
   while [ "$(now_epoch)" -le "$END" ]; do
     TS="$(now_epoch_ns)"
     MATCHED="$(
-      awk -v ts="$TS" -v want="$CELL_IFACE" -F'[: ]+' '
+      awk -v ts="$TS" -v want="$CELL_IFACE" -F':' '
       BEGIN {
         n = split(want, wanted, ",")
         for (i = 1; i <= n; i++) {
@@ -211,9 +211,11 @@ sample_netdev() {
         }
       }
       NR > 2 {
-        iface=$2
-        if (want == "" || iface in wants) {
-          print ts "\t" iface "\t" $3 "\t" $4 "\t" $11 "\t" $12
+        iface=$1
+        gsub(/^ +| +$/, "", iface)
+        split($2, fields, /[ ]+/)
+        if (want == "" || (iface in wants)) {
+          print ts "\t" iface "\t" fields[2] "\t" fields[3] "\t" fields[10] "\t" fields[11]
         }
       }' /proc/net/dev
     )"

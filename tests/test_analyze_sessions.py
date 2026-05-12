@@ -52,6 +52,29 @@ class AnalyzeSessionsTest(unittest.TestCase):
             self.assertEqual(rows[1]["signal_metric_updates"], "1")
             self.assertEqual(rows[1]["user_plane_packets"], "20")
 
+    def test_activity_proxy_counts_multiple_ifaces(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            session = Path(tmp) / "dtc_iperf_1700000200"
+            raw = session / "raw"
+            raw.mkdir(parents=True)
+            (session / "manifest.json").write_text(
+                json.dumps({"phase": "dtc_iperf", "start_epoch": 1700000200}),
+                encoding="utf-8",
+            )
+            (raw / "netdev.tsv").write_text(
+                "1700000200.0\trmnet_ipa0\t100\t10\t100\t20\n"
+                "1700000200.0\trmnet_data3\t1000\t100\t1000\t200\n"
+                "1700000201.0\trmnet_ipa0\t200\t15\t300\t35\n"
+                "1700000201.0\trmnet_data3\t2000\t150\t3000\t260\n",
+                encoding="utf-8",
+            )
+            out = Path(tmp) / "out"
+            out.mkdir()
+            analyze_sessions.write_activity_rate(session, out)
+            with (out / "activity_proxy_rate_1s.csv").open(encoding="utf-8") as fh:
+                rows = list(csv.DictReader(fh))
+            self.assertEqual(rows[1]["user_plane_packets"], "130")
+
 
 if __name__ == "__main__":
     unittest.main()
