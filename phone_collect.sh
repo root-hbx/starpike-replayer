@@ -233,11 +233,17 @@ sample_cpu_context() {
       cat /proc/softirqs 2>&1
       echo "### cpufreq"
       for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
-        [ -r "$f" ] && echo "$f $(cat "$f")"
+        if [ -r "$f" ]; then
+          VALUE="$(cat "$f" 2>/dev/null || true)"
+          [ -n "$VALUE" ] && echo "$f $VALUE"
+        fi
       done
       echo "### thermal"
       for z in /sys/class/thermal/thermal_zone*/temp; do
-        [ -r "$z" ] && echo "$z $(cat "$z")"
+        if [ -r "$z" ]; then
+          VALUE="$(cat "$z" 2>/dev/null || true)"
+          [ -n "$VALUE" ] && echo "$z $VALUE"
+        fi
       done
       echo "### battery"
       dumpsys battery 2>&1
