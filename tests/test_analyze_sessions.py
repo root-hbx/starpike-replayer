@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from scripts import analyze_sessions
+from scripts.extract_telephony_metrics import extract_metrics
 
 
 class AnalyzeSessionsTest(unittest.TestCase):
@@ -74,6 +75,82 @@ class AnalyzeSessionsTest(unittest.TestCase):
             with (out / "activity_proxy_rate_1s.csv").open(encoding="utf-8") as fh:
                 rows = list(csv.DictReader(fh))
             self.assertEqual(rows[1]["user_plane_packets"], "130")
+
+    def test_extract_lte_signal_metrics_filters_unknowns(self):
+        block = (
+            "mSignalStrength=SignalStrength:{"
+            "mLte=CellSignalStrengthLte: rssi=-65 rsrp=-90 rsrq=-7 rssnr=22 "
+            "cqiTableIndex=2147483647 cqi=2147483647 ta=2147483647 level=4,"
+            "mNr=CellSignalStrengthNr:{ ssRsrp = 2147483647 ssRsrq = 2147483647 "
+            "ssSinr = 2147483647 timingAdvance = 2147483647 },primary=CellSignalStrengthLte}\n"
+            "mCellIdentity=CellIdentityLte:{ mCi=19695115 mPci=132 mTac=4136 "
+            "mEarfcn=39148 mBands=[40] mBandwidth=20000 mMcc=460 mMnc=00 }\n"
+            "mPhysicalChannelConfigs=[{mCellBandwidthDownlinkKhz=20000,mPhysicalCellId=132}]"
+        )
+        metrics = extract_metrics(block)
+        self.assertEqual(metrics["lte_rssi_dbm"], -65)
+        self.assertEqual(metrics["lte_rsrp_dbm"], -90)
+        self.assertEqual(metrics["lte_rsrq_db"], -7)
+        self.assertEqual(metrics["lte_sinr_db"], 22)
+        self.assertIsNone(metrics["lte_cqi"])
+        self.assertIsNone(metrics["lte_ta"])
+        self.assertEqual(metrics["pci"], 132)
+        self.assertEqual(metrics["tac"], 4136)
+        self.assertEqual(metrics["earfcn"], 39148)
+
+    def test_signal_rows_from_existing_snapshot(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            session = Path(tmp) / "dtc_iperf_100"
+            raw = session / "raw"
+            raw.mkdir(parents=True)
+            (session / "manifest.json").write_text(
+                json.dumps({"phase": "dtc_iperf", "start_epoch": 100}),
+                encoding="utf-8",
+            )
+            (raw / "telephony_snapshots.log").write_text(
+                "### SNAPSHOT 100.0\n"
+                "  Phone Id=0\n"
+                "    mSignalStrength=SignalStrength:{mLte=CellSignalStrengthLte: "
+                "rssi=-65 rsrp=-90 rsrq=-7 rssnr=22 cqi=2147483647 ta=2147483647 level=4,"
+                "mNr=CellSignalStrengthNr:{ ssRsrp = 2147483647 ssRsrq = 2147483647 "
+                "ssSinr = 2147483647 timingAdvance = 2147483647 },primary=CellSignalStrengthLte}\n"
+                "    mCellIdentity=CellIdentityLte:{ mCi=19695115 mPci=132 mTac=4136 "
+                "mEarfcn=39148 mMcc=460 mMnc=00 }\n",
+                encoding="utf-8",
+            )
+            rows = analyze_sessions.signal_rows(session)
+            self.assertEqual(rows[0]["lte_rsrp_dbm"], "-90")
+            self.assertEqual(rows[0]["lte_cqi"], "")
+            self.assertEqual(rows[0]["lte_ta"], "")
+
+    def test_signal_rows_from_radio_log_events(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            session = Path(tmp) / "dtc_iperf_100"
+            raw = session / "raw"
+            raw.mkdir(parents=True)
+            (session / "manifest.json").write_text(
+                json.dumps({"phase": "dtc_iperf", "start_epoch": 100}),
+                encoding="utf-8",
+            )
+            (raw / "radio.log").write_text(
+                "         1700000100.100000  1  1 D OplusSignalSmooth/0: notifySignalStrength, "
+                "mSignalStrength: SignalStrength:{mLte=CellSignalStrengthLte: "
+                "rssi=-63 rsrp=-90 rsrq=-6 rssnr=29 cqi=2147483647 ta=2147483647 level=4,"
+                "mNr=CellSignalStrengthNr:{ ssRsrp = 2147483647 ssRsrq = 2147483647 "
+                "ssSinr = 2147483647 timingAdvance = 2147483647 },primary=CellSignalStrengthLte}\n"
+                "         1700000101.100000  1  1 D VirtualcommTelephonyCallback: onSignalStrengthsChanged[0]: "
+                "SignalStrength:{mLte=CellSignalStrengthLte: "
+                "rssi=-59 rsrp=-84 rsrq=-7 rssnr=28 cqi=2147483647 ta=2147483647 level=4,"
+                "mNr=CellSignalStrengthNr:{ ssRsrp = 2147483647 ssRsrq = 2147483647 "
+                "ssSinr = 2147483647 timingAdvance = 2147483647 },primary=CellSignalStrengthLte}\n",
+                encoding="utf-8",
+            )
+            rows = analyze_sessions.signal_rows(session)
+            self.assertEqual(len(rows), 2)
+            self.assertEqual(rows[0]["epoch"], "1700000100.1")
+            self.assertEqual(rows[0]["phone_id"], "0")
+            self.assertEqual(rows[0]["lte_rsrp_dbm"], "-90")
+            self.assertEqual(rows[1]["lte_rsrp_dbm"], "-84")
 
 
 if __name__ == "__main__":

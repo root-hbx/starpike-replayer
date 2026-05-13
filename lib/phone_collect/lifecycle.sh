@@ -1,0 +1,42 @@
+cleanup() {
+  for p in $PIDS; do
+    kill "$p" >/dev/null 2>&1 || true
+  done
+  wait >/dev/null 2>&1 || true
+  echo "$(now_epoch_ns) finished" >> "${SESSION_DIR}/collector.log"
+}
+
+collect_main() {
+  if [ "$PRECHECK" = "1" ]; then
+    precheck
+    exit 0
+  fi
+
+  START_EPOCH="$(now_epoch)"
+  SESSION_DIR="${OUT_ROOT}/${PHASE}_${START_EPOCH}"
+  RAW_DIR="${SESSION_DIR}/raw"
+  mkdir -p "$RAW_DIR"
+  CELL_IFACE="$(detect_iface)"
+  PIDS=""
+
+  write_manifest
+  copy_diag_dir
+
+  trap cleanup EXIT INT TERM
+
+  echo "$(now_epoch_ns) starting ${PHASE}" > "${SESSION_DIR}/collector.log"
+  precheck > "${SESSION_DIR}/precheck.log" 2>&1 || true
+
+  start_radio_logcat
+  sample_proc_stat & PIDS="$PIDS $!"
+  sample_processes & PIDS="$PIDS $!"
+  sample_netdev & PIDS="$PIDS $!"
+  sample_system_context & PIDS="$PIDS $!"
+  sample_cpu_context & PIDS="$PIDS $!"
+  start_optional_samplers
+  start_workload
+
+  sleep "$DURATION"
+  cleanup
+  trap - EXIT INT TERM
+}

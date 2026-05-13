@@ -42,6 +42,33 @@ not include VPN interfaces such as `tun0`.
 
 For example, on my *One Plus* phone, it's `rmnet_ipa0` and `rmnet_data3`.
 
+## Pixel 10 DTC-Oriented Raw Capture
+
+For the Japan Pixel 10 run, keep the legacy samplers enabled and add the
+opt-in DTC-oriented raw sources:
+
+```sh
+--enable-pixel-context \
+--enable-signal-samples \
+--enable-location \
+--enable-radio-events
+```
+
+These add:
+
+- `raw/device_context.json` and `raw/device_context.log`: model/build/baseband,
+  radio, phone, and GNSS context.
+- `raw/signal_samples.jsonl`: parsed Android-visible signal and cell fields,
+  including RSRP/RSSI/RSRQ/SINR/CQI/TA when the platform exposes them.
+- `raw/location_gnss.jsonl`: GNSS samples from `termux-location`, if available.
+- `raw/radio_events.log`: filtered RRC/registration/attach/handover/auth and
+  signal-related radio log events.
+
+Android unknown sentinel values such as `2147483647` are treated as missing by
+the host-side analysis. Precise TA, CQI, Doppler/frequency shift, RRC setup
+delay, and attach phase breakdown still require the phone to expose those fields
+or an external modem diagnostic log copied via `--diag-dir DIR`.
+
 ## 2. Airplane Baseline
 
 Manually enable airplane mode. Wait 30 seconds.
@@ -57,7 +84,15 @@ Manually disable airplane mode. Connect to docomo/DTC.
 Wait 1 minute for the network state to stabilize.
 
 ```sh
-sh phone_collect.sh --phase cellular_idle --duration 300 --out ./sessions --iface rmnet_data0
+sh phone_collect.sh \
+  --phase cellular_idle \
+  --duration 300 \
+  --out ./sessions \
+  --iface rmnet_data0 \
+  --enable-pixel-context \
+  --enable-signal-samples \
+  --enable-location \
+  --enable-radio-events
 ```
 
 ## 4. TCP Active Measurement
@@ -65,7 +100,17 @@ sh phone_collect.sh --phase cellular_idle --duration 300 --out ./sessions --ifac
 Required.
 
 ```sh
-sh phone_collect.sh --phase dtc_tcp --duration 300 --tcp-host 1.1.1.1 --tcp-port 443 --out ./sessions --iface rmnet_data0
+sh phone_collect.sh \
+  --phase dtc_tcp \
+  --duration 300 \
+  --tcp-host 1.1.1.1 \
+  --tcp-port 443 \
+  --out ./sessions \
+  --iface rmnet_data0 \
+  --enable-pixel-context \
+  --enable-signal-samples \
+  --enable-location \
+  --enable-radio-events
 ```
 
 ## 5. Ping Active Measurement
@@ -119,6 +164,10 @@ python3 scripts/analyze_sessions.py \
   --active sessions/dtc_ping_... \
   --out results
 ```
+
+The analyzer now also writes `signal_timeseries.csv` when either
+`raw/signal_samples.jsonl` or `raw/telephony_snapshots.log` contains parseable
+signal fields.
 
 If `dtc_ping` was not collected, remove this line:
 
