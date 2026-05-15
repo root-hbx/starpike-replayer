@@ -12,6 +12,7 @@ cleanup() {
   for p in $PIDS; do
     kill -9 "$p" >/dev/null 2>&1 || true
   done
+  record_session_context end
   finish_optional_samplers
   echo "$(now_epoch_ns) finished" >> "${SESSION_DIR}/collector.log"
 }
@@ -39,10 +40,14 @@ collect_main() {
   precheck > "${SESSION_DIR}/precheck.log" 2>&1 || true
 
   start_radio_logcat
+  start_all_logcat
+  record_session_context start
   sample_proc_stat & PIDS="$PIDS $!"
   sample_processes & PIDS="$PIDS $!"
   sample_netdev & PIDS="$PIDS $!"
+  sample_netdev_all & PIDS="$PIDS $!"
   sample_system_context & PIDS="$PIDS $!"
+  sample_network_context & PIDS="$PIDS $!"
   sample_cpu_context & PIDS="$PIDS $!"
   start_optional_samplers
   start_workload

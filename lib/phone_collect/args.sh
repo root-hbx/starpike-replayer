@@ -36,12 +36,14 @@ Options:
   --enable-pixel-context    record one-shot device/radio/GNSS context
   --enable-signal-samples   record structured telephony signal/cell samples
   --enable-location         record GNSS/location samples when termux-location is available
-  --enable-radio-events     record filtered radio/control-plane events
+  --enable-radio-events     record filtered radio/control-plane events from radio/all logcat
   --diag-dir DIR            copy external modem diagnostic logs into raw/diag
   --precheck                only check commands and exit
 
-The script records raw AP-visible data. It does not switch airplane mode,
-force carrier selection, or decode modem-internal messages.
+The script records broad AP-visible raw data, including all logcat buffers,
+selected and all-interface netdev counters, routing/VPN state, and telephony
+dumpsys snapshots. It does not switch airplane mode, force carrier selection,
+or decode modem-internal messages.
 EOF
 }
 

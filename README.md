@@ -8,6 +8,8 @@ This repository intentionally measures AP-visible quantities:
 - AP-visible cellular activity proxy rates.
 - Android-visible radio signal/cell metrics, when available from `dumpsys`
   or Termux APIs.
+- Broad AP-visible raw evidence: all logcat buffers, telephony/connectivity
+  dumpsys snapshots, routing state, VPN/tunnel state, and all-interface counters.
 
 **NOTE:** It does not decode modem-internal OTA messages and cannot be interpreted as
 MobileInsight-equivalent PHY/MAC/RLC/PDCP/RRC message rates.
@@ -33,4 +35,3 @@ MobileInsight-equivalent PHY/MAC/RLC/PDCP/RRC message rates.
 See [docs/EXPERIMENT.md](docs/EXPERIMENT.md) for setup and details.
 
 See [docs/oneplus_base.md](docs/oneplus_base.md) for getting started.
-

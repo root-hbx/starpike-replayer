@@ -1,6 +1,6 @@
 precheck() {
   echo "phone_collect precheck"
-  for c in sh awk sed date ps logcat dumpsys ping python3; do
+  for c in sh awk sed date ps logcat dumpsys settings service cmd ip ss ping python3; do
     if have_cmd "$c"; then
       echo "ok: $c"
     else
@@ -32,6 +32,13 @@ precheck() {
   echo "android_release: $(getprop ro.build.version.release 2>/dev/null || echo unknown)"
   echo "device: $(getprop ro.product.model 2>/dev/null || echo unknown)"
   echo "baseband: $(getprop gsm.version.baseband 2>/dev/null || echo unknown)"
+  echo "active_routes:"
+  if have_cmd ip; then
+    ip route 2>&1
+    ip rule 2>&1
+  else
+    echo "ip unavailable"
+  fi
   echo "netdev_snapshot:"
   if [ ! -r /proc/net/dev ]; then
     echo "/proc/net/dev unavailable"

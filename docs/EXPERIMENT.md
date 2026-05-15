@@ -64,6 +64,25 @@ These add:
 - `raw/radio_events.log`: filtered RRC/registration/attach/handover/auth and
   signal-related radio log events.
 
+The collector now always records a broader AP-visible raw capture profile:
+
+- `raw/logcat_all.log`: all Android logcat buffers, in addition to
+  `raw/radio.log`.
+- `raw/session_context_start.log` and `raw/session_context_end.log`: full
+  start/end snapshots of `getprop`, Android settings, service lists, major
+  telephony/connectivity dumps, routes, sockets, and netdev state.
+- `raw/telephony_snapshots.log`: repeated telephony, phone, carrier config,
+  subscription, IMS, satellite, connectivity, and cell-info snapshots.
+- `raw/network_context.log`: repeated routing, socket, netstats, Wi-Fi,
+  connectivity, and procfs network snapshots.
+- `raw/netdev_all.tsv`: all-interface counters. `raw/netdev.tsv` still records
+  only the interface list passed through `--iface`.
+
+If Clash Meta for Android or another VPN is enabled, keep it enabled for the
+whole phase if that is part of the scenario. Afterward, use
+`raw/network_context.log`, `raw/netdev_all.tsv`, and the start/end context logs
+to distinguish `rmnet*`, `wlan*`, `swlan*`, `tun*`, and VPN-routed traffic.
+
 Android unknown sentinel values such as `2147483647` are treated as missing by
 the host-side analysis. Precise TA, CQI, Doppler/frequency shift, RRC setup
 delay, and attach phase breakdown still require the phone to expose those fields

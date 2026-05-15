@@ -13,7 +13,7 @@ sample_proc_stat() {
 
 sample_processes() {
   END=$((START_EPOCH + DURATION))
-  PATTERN='phone|ims|ril|radio|telephony|netd|connectivity|qcril|vendor.*data|modem'
+  PATTERN='phone|ims|ril|radio|telephony|netd|connectivity|qcril|vendor.*data|modem|satellite|ntn|vpn|clash|tun|mihomo'
   while [ "$(now_epoch)" -le "$END" ]; do
     TS="$(now_epoch_ns)"
     for d in /proc/[0-9]*; do
@@ -68,6 +68,56 @@ sample_netdev() {
   done
 }
 
+sample_netdev_all() {
+  if [ ! -r /proc/net/dev ]; then
+    echo "$(now_epoch_ns) NETDEV_ALL_UNAVAILABLE" >> "${RAW_DIR}/netdev_all.err"
+    return
+  fi
+  END=$((START_EPOCH + DURATION))
+  while [ "$(now_epoch)" -le "$END" ]; do
+    TS="$(now_epoch_ns)"
+    awk -v ts="$TS" -F':' '
+      NR > 2 {
+        iface=$1
+        gsub(/^ +| +$/, "", iface)
+        split($2, fields, /[ ]+/)
+        print ts "\t" iface "\t" fields[2] "\t" fields[3] "\t" fields[10] "\t" fields[11]
+      }' /proc/net/dev >> "${RAW_DIR}/netdev_all.tsv"
+    sleep "$INTERVAL"
+  done
+}
+
+record_command() {
+  LABEL="$1"
+  shift
+  echo "### ${LABEL}"
+  "$@" 2>&1
+}
+
+record_root_command() {
+  LABEL="$1"
+  shift
+  echo "### ${LABEL}"
+  if [ "$(id -u 2>/dev/null)" = "0" ]; then
+    "$@" 2>&1
+  elif have_cmd su; then
+    su -c "$*" 2>&1
+  else
+    "$@" 2>&1
+  fi
+}
+
+record_file_if_readable() {
+  LABEL="$1"
+  PATH_TO_READ="$2"
+  echo "### ${LABEL}"
+  if [ -r "$PATH_TO_READ" ]; then
+    cat "$PATH_TO_READ" 2>&1
+  else
+    echo "unavailable: ${PATH_TO_READ}"
+  fi
+}
+
 sample_system_context() {
   END=$((START_EPOCH + DURATION))
   while [ "$(now_epoch)" -le "$END" ]; do
@@ -78,6 +128,18 @@ sample_system_context() {
       dumpsys telephony.registry 2>&1
       echo "### dumpsys connectivity"
       dumpsys connectivity 2>&1
+      echo "### dumpsys telephony"
+      dumpsys telephony 2>&1
+      echo "### dumpsys phone"
+      dumpsys phone 2>&1
+      echo "### dumpsys carrier_config"
+      dumpsys carrier_config 2>&1
+      echo "### dumpsys subscription"
+      dumpsys subscription 2>&1
+      echo "### dumpsys ims"
+      dumpsys ims 2>&1
+      echo "### dumpsys satellite"
+      dumpsys satellite 2>&1
       echo "### termux-telephony-cellinfo"
       if have_cmd termux-telephony-cellinfo; then
         termux-telephony-cellinfo 2>&1
@@ -85,6 +147,49 @@ sample_system_context() {
         echo "termux-telephony-cellinfo unavailable"
       fi
     } >> "${RAW_DIR}/telephony_snapshots.log"
+    sleep "$INTERVAL"
+  done
+}
+
+sample_network_context() {
+  END=$((START_EPOCH + DURATION))
+  while [ "$(now_epoch)" -le "$END" ]; do
+    TS="$(now_epoch_ns)"
+    {
+      echo "### SNAPSHOT ${TS}"
+      if have_cmd ip; then
+        record_command "ip addr" ip addr
+        record_command "ip route" ip route
+        record_command "ip -6 route" ip -6 route
+        record_command "ip rule" ip rule
+      else
+        echo "### ip"
+        echo "ip unavailable"
+      fi
+      if have_cmd ss; then
+        record_command "ss -tuna" ss -tuna
+      else
+        echo "### ss"
+        echo "ss unavailable"
+      fi
+      record_file_if_readable "/proc/net/route" /proc/net/route
+      record_file_if_readable "/proc/net/ipv6_route" /proc/net/ipv6_route
+      record_file_if_readable "/proc/net/tcp" /proc/net/tcp
+      record_file_if_readable "/proc/net/tcp6" /proc/net/tcp6
+      record_file_if_readable "/proc/net/udp" /proc/net/udp
+      record_file_if_readable "/proc/net/udp6" /proc/net/udp6
+      record_file_if_readable "/proc/net/xt_qtaguid/stats" /proc/net/xt_qtaguid/stats
+      echo "### dumpsys connectivity"
+      dumpsys connectivity 2>&1
+      echo "### dumpsys netstats"
+      dumpsys netstats 2>&1
+      echo "### dumpsys network_management"
+      dumpsys network_management 2>&1
+      echo "### dumpsys wifi"
+      dumpsys wifi 2>&1
+      echo "### dumpsys satellite"
+      dumpsys satellite 2>&1
+    } >> "${RAW_DIR}/network_context.log"
     sleep "$INTERVAL"
   done
 }
@@ -127,6 +232,70 @@ start_radio_logcat() {
   PIDS="$PIDS $!"
 }
 
+start_all_logcat() {
+  if [ "$(id -u 2>/dev/null)" = "0" ]; then
+    logcat -b all -v epoch,usec > "${RAW_DIR}/logcat_all.log" 2> "${RAW_DIR}/logcat_all.log.err" &
+  else
+    run_root "logcat -b all -v epoch,usec" > "${RAW_DIR}/logcat_all.log" 2> "${RAW_DIR}/logcat_all.log.err" &
+  fi
+  PIDS="$PIDS $!"
+}
+
+record_session_context() {
+  LABEL="$1"
+  OUT_PATH="${RAW_DIR}/session_context_${LABEL}.log"
+  {
+    echo "### SNAPSHOT $(now_epoch_ns)"
+    record_command "getprop" getprop
+    record_command "settings list global" settings list global
+    record_command "settings list secure" settings list secure
+    record_command "settings list system" settings list system
+    record_command "service list" service list
+    record_command "dumpsys -l" dumpsys -l
+    echo "### dumpsys connectivity"
+    dumpsys connectivity 2>&1
+    echo "### dumpsys telephony"
+    dumpsys telephony 2>&1
+    echo "### dumpsys phone"
+    dumpsys phone 2>&1
+    echo "### dumpsys carrier_config"
+    dumpsys carrier_config 2>&1
+    echo "### dumpsys subscription"
+    dumpsys subscription 2>&1
+    echo "### dumpsys telecom"
+    dumpsys telecom 2>&1
+    echo "### dumpsys ims"
+    dumpsys ims 2>&1
+    echo "### dumpsys satellite"
+    dumpsys satellite 2>&1
+    echo "### dumpsys location"
+    dumpsys location 2>&1
+    echo "### dumpsys netstats"
+    dumpsys netstats 2>&1
+    echo "### dumpsys wifi"
+    dumpsys wifi 2>&1
+    if have_cmd cmd; then
+      record_command "cmd connectivity dump" cmd connectivity dump
+      record_command "cmd phone help" cmd phone help
+    else
+      echo "### cmd"
+      echo "cmd unavailable"
+    fi
+    if have_cmd ip; then
+      record_command "ip addr" ip addr
+      record_command "ip route" ip route
+      record_command "ip -6 route" ip -6 route
+      record_command "ip rule" ip rule
+    fi
+    if have_cmd ss; then
+      record_command "ss -tuna" ss -tuna
+    fi
+    record_file_if_readable "/proc/net/dev" /proc/net/dev
+    record_file_if_readable "/proc/net/route" /proc/net/route
+    record_file_if_readable "/proc/net/xt_qtaguid/stats" /proc/net/xt_qtaguid/stats
+  } > "$OUT_PATH"
+}
+
 record_pixel_context() {
   MODEL="$(getprop ro.product.model 2>/dev/null)"
   DEVICE="$(getprop ro.product.device 2>/dev/null)"
@@ -150,6 +319,16 @@ EOF
     dumpsys phone 2>&1
     echo "### dumpsys location"
     dumpsys location 2>&1
+    echo "### dumpsys telephony"
+    dumpsys telephony 2>&1
+    echo "### dumpsys carrier_config"
+    dumpsys carrier_config 2>&1
+    echo "### dumpsys subscription"
+    dumpsys subscription 2>&1
+    echo "### dumpsys ims"
+    dumpsys ims 2>&1
+    echo "### dumpsys satellite"
+    dumpsys satellite 2>&1
   } > "${RAW_DIR}/device_context.log"
 }
 
@@ -189,8 +368,13 @@ start_radio_events() {
 finish_radio_events() {
   [ "$ENABLE_RADIO_EVENTS" = "1" ] || return
   [ -r "${RAW_DIR}/radio.log" ] || return
-  grep -Ei 'RRC|registration|attach|detach|DataCall|setupDataCall|deactivateDataCall|handover|TAU|Tracking Area|Authentication|Security mode|Identity|Random access|RACH|preamble|contention|SignalStrength|CellIdentity|PhysicalChannel' \
-    "${RAW_DIR}/radio.log" > "${RAW_DIR}/radio_events.log" 2> "${RAW_DIR}/radio_events.err" || true
+  RADIO_EVENT_PATTERN='RRC|registration|attach|detach|DataCall|setupDataCall|deactivateDataCall|handover|TAU|Tracking Area|Authentication|Security mode|Identity|Random access|RACH|preamble|contention|SignalStrength|CellIdentity|CellInfo|PhysicalChannel|satellite|ntn|nonTerrestrial|isNonTerrestrialNetwork|emergency|sos|datagram|provision|allowedNetworkTypes|barring|NetworkRegistrationInfo|domain=PS|transportType|IWLAN|PDU|DataNetwork|ServiceState|CarrierConfig|Subscription|IMS|Ims|APN|roaming|PLMN'
+  {
+    grep -Ei "$RADIO_EVENT_PATTERN" "${RAW_DIR}/radio.log" 2>/dev/null || true
+    if [ -r "${RAW_DIR}/logcat_all.log" ]; then
+      grep -Ei "$RADIO_EVENT_PATTERN" "${RAW_DIR}/logcat_all.log" 2>/dev/null || true
+    fi
+  } > "${RAW_DIR}/radio_events.log" 2> "${RAW_DIR}/radio_events.err"
 }
 
 start_optional_samplers() {

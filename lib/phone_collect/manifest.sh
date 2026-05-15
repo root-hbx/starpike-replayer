@@ -17,6 +17,7 @@ write_manifest() {
   "enable_location": ${ENABLE_LOCATION},
   "enable_radio_events": ${ENABLE_RADIO_EVENTS},
   "diag_dir": "$(json_escape "$DIAG_DIR")",
+  "ap_capture_profile": "broad_logcat_dumpsys_network_vpn",
   "claim": "AP-visible cellular activity proxy rate; not modem-internal OTA messages"
 }
 EOF
