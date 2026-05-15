@@ -1,8 +1,16 @@
 cleanup() {
+  if [ "${CLEANED_UP:-0}" = "1" ]; then
+    return
+  fi
+  CLEANED_UP="1"
+
   for p in $PIDS; do
     kill "$p" >/dev/null 2>&1 || true
   done
-  wait >/dev/null 2>&1 || true
+  for p in $PIDS; do
+    wait "$p" >/dev/null 2>&1 || true
+  done
+  finish_optional_samplers
   echo "$(now_epoch_ns) finished" >> "${SESSION_DIR}/collector.log"
 }
 
@@ -18,6 +26,7 @@ collect_main() {
   mkdir -p "$RAW_DIR"
   CELL_IFACE="$(detect_iface)"
   PIDS=""
+  CLEANED_UP="0"
 
   write_manifest
   copy_diag_dir

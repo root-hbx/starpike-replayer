@@ -178,10 +178,15 @@ sample_location() {
 }
 
 start_radio_events() {
-  run_root "logcat -b radio -v epoch,usec" 2> "${RAW_DIR}/radio_events.err" \
-    | grep -Ei 'RRC|registration|attach|detach|DataCall|setupDataCall|deactivateDataCall|handover|TAU|Tracking Area|Authentication|Security mode|Identity|Random access|RACH|preamble|contention|SignalStrength|CellIdentity|PhysicalChannel' \
-    > "${RAW_DIR}/radio_events.log" &
-  PIDS="$PIDS $!"
+  : > "${RAW_DIR}/radio_events.log"
+  : > "${RAW_DIR}/radio_events.err"
+}
+
+finish_radio_events() {
+  [ "$ENABLE_RADIO_EVENTS" = "1" ] || return
+  [ -r "${RAW_DIR}/radio.log" ] || return
+  grep -Ei 'RRC|registration|attach|detach|DataCall|setupDataCall|deactivateDataCall|handover|TAU|Tracking Area|Authentication|Security mode|Identity|Random access|RACH|preamble|contention|SignalStrength|CellIdentity|PhysicalChannel' \
+    "${RAW_DIR}/radio.log" > "${RAW_DIR}/radio_events.log" 2> "${RAW_DIR}/radio_events.err" || true
 }
 
 start_optional_samplers() {
@@ -197,4 +202,8 @@ start_optional_samplers() {
   if [ "$ENABLE_RADIO_EVENTS" = "1" ]; then
     start_radio_events
   fi
+}
+
+finish_optional_samplers() {
+  finish_radio_events
 }
