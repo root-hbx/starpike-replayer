@@ -119,7 +119,11 @@ sample_cpu_context() {
 }
 
 start_radio_logcat() {
-  run_root "logcat -b radio -v epoch,usec" > "${RAW_DIR}/radio.log" 2> "${RAW_DIR}/radio.log.err" &
+  if [ "$(id -u 2>/dev/null)" = "0" ]; then
+    logcat -b radio -v epoch,usec > "${RAW_DIR}/radio.log" 2> "${RAW_DIR}/radio.log.err" &
+  else
+    run_root "logcat -b radio -v epoch,usec" > "${RAW_DIR}/radio.log" 2> "${RAW_DIR}/radio.log.err" &
+  fi
   PIDS="$PIDS $!"
 }
 

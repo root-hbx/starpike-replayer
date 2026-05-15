@@ -3,12 +3,14 @@ cleanup() {
     return
   fi
   CLEANED_UP="1"
+  trap - EXIT INT TERM
 
   for p in $PIDS; do
     kill "$p" >/dev/null 2>&1 || true
   done
+  sleep 1
   for p in $PIDS; do
-    wait "$p" >/dev/null 2>&1 || true
+    kill -9 "$p" >/dev/null 2>&1 || true
   done
   finish_optional_samplers
   echo "$(now_epoch_ns) finished" >> "${SESSION_DIR}/collector.log"
@@ -47,5 +49,4 @@ collect_main() {
 
   sleep "$DURATION"
   cleanup
-  trap - EXIT INT TERM
 }
