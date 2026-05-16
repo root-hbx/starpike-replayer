@@ -10,7 +10,7 @@ start_workload() {
         --interval 1 --out "${RAW_DIR}/tcp_rtt.csv" > "${RAW_DIR}/tcp_rtt.log" 2>&1 &
       PIDS="$PIDS $!"
       ;;
-    dtc_iperf)
+    dtc_iperf|*_iperf*)
       if [ -z "$IPERF_SERVER" ]; then
         echo "dtc_iperf requires --iperf-server" >> "${RAW_DIR}/iperf3.log"
       elif have_cmd iperf3; then
