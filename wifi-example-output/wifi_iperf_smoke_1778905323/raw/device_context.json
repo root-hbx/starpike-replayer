@@ -1,0 +1,9 @@
+{
+  "epoch": "1778905326.989301975",
+  "model": "Pixel 10",
+  "device": "frankel",
+  "build_fingerprint": "google/frankel/frankel:16/BD1A.250702.001/13724644:user/release-keys",
+  "android_release": "16",
+  "baseband": "g5400i-250625-250626-B-13698361,g5400i-250625-250626-B-13698361",
+  "radio_hal": ""
+}

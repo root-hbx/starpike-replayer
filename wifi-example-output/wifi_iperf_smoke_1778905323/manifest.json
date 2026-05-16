@@ -1,0 +1,19 @@
+{
+  "phase": "wifi_iperf_smoke",
+  "start_epoch": 1778905323,
+  "duration_sec": 30,
+  "interval_sec": 1,
+  "cellular_iface": "wlan0",
+  "target": "1.1.1.1",
+  "tcp_host": "1.1.1.1",
+  "tcp_port": 443,
+  "iperf_server": "129.154.215.71",
+  "iperf_bw": "256K",
+  "enable_pixel_context": 1,
+  "enable_signal_samples": 1,
+  "enable_location": 0,
+  "enable_radio_events": 1,
+  "diag_dir": "",
+  "ap_capture_profile": "broad_logcat_dumpsys_network_vpn",
+  "claim": "AP-visible cellular activity proxy rate; not modem-internal OTA messages"
+}
