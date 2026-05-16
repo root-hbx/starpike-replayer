@@ -370,9 +370,9 @@ finish_radio_events() {
   [ -r "${RAW_DIR}/radio.log" ] || return
   RADIO_EVENT_PATTERN='RRC|registration|attach|detach|DataCall|setupDataCall|deactivateDataCall|handover|TAU|Tracking Area|Authentication|Security mode|Identity|Random access|RACH|preamble|contention|SignalStrength|CellIdentity|CellInfo|PhysicalChannel|satellite|ntn|nonTerrestrial|isNonTerrestrialNetwork|emergency|sos|datagram|provision|allowedNetworkTypes|barring|NetworkRegistrationInfo|domain=PS|transportType|IWLAN|PDU|DataNetwork|ServiceState|CarrierConfig|Subscription|IMS|Ims|APN|roaming|PLMN'
   {
-    grep -Ei "$RADIO_EVENT_PATTERN" "${RAW_DIR}/radio.log" 2>/dev/null || true
+    awk -v start="$START_EPOCH" '$1 + 0 >= start' "${RAW_DIR}/radio.log" 2>/dev/null | grep -Ei "$RADIO_EVENT_PATTERN" || true
     if [ -r "${RAW_DIR}/logcat_all.log" ]; then
-      grep -Ei "$RADIO_EVENT_PATTERN" "${RAW_DIR}/logcat_all.log" 2>/dev/null || true
+      awk -v start="$START_EPOCH" '$1 + 0 >= start' "${RAW_DIR}/logcat_all.log" 2>/dev/null | grep -Ei "$RADIO_EVENT_PATTERN" || true
     fi
   } > "${RAW_DIR}/radio_events.log" 2> "${RAW_DIR}/radio_events.err"
 }
