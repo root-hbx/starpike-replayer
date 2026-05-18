@@ -82,41 +82,57 @@ cp sessions_smoke.tar.gz /sdcard/Download
 
 ### 1. Airplane Baseline
 
+> 无网，无应用
+
 - 手动打开"飞行模式"
 - 确认: Wi-Fi 关闭、VPN 关闭
 - 确认: 手机上除 `Termux` 外其他应用程序全部关闭
 - 然后跑 Step 1 指令
 
 ```sh
-su -c 'cd /data/data/com.termux/files/home/starpike-replayer && PATH=/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:$PATH sh phone_collect.sh --phase airplane_idle --duration 60 --out ./sessions_real_01_airplane_baseline --enable-pixel-context --enable-signal-samples --enable-radio-events'
+su -c 'cd /data/data/com.termux/files/home/starpike-replayer && PATH=/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:$PATH sh phone_collect.sh --phase airplane_idle --duration 600 --out ./sessions_real_01_airplane_baseline --enable-pixel-context --enable-signal-samples --enable-radio-events'
 ```
 
 ```sh
 tar -czf sessions_real_01_airplane_baseline.tar.gz sessions_real_01_airplane_baseline
 ```
 
+```sh
+cp sessions_real_01_airplane_baseline.tar.gz /sdcard/Download
+```
+
 ### 2. Cellular Idle Baseline
+
+> 地面蜂窝网络
 
 - 确认: Wi-Fi 关闭、VPN 关闭
 - 等 60s 左右, 移动网注册稳定
 - 然后跑 Step 2 指令
 
 ```sh
-su -c 'cd /data/data/com.termux/files/home/starpike-replayer && PATH=/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:$PATH; IFACE=$(sh phone_collect.sh --precheck | sed -n "s/^cellular_iface: //p"); sh phone_collect.sh --phase cellular_idle --duration 60 --out ./sessions_real_02_cellular_idle --iface "$IFACE" --enable-pixel-context --enable-signal-samples --enable-radio-events'
+su -c 'cd /data/data/com.termux/files/home/starpike-replayer && PATH=/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:$PATH; IFACE=$(sh phone_collect.sh --precheck | sed -n "s/^cellular_iface: //p"); sh phone_collect.sh --phase cellular_idle --duration 600 --out ./sessions_real_02_cellular_idle --iface "$IFACE" --enable-pixel-context --enable-signal-samples --enable-radio-events'
 ```
 
 ```sh
 tar -czf sessions_real_02_cellular_idle.tar.gz sessions_real_02_cellular_idle
 ```
 
+```sh
+cp sessions_real_02_cellular_idle.tar.gz /sdcard/Download
+```
+
 ### 3. TCP Active Measurement
 
 ```sh
-su -c 'cd /data/data/com.termux/files/home/starpike-replayer && PATH=/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:$PATH; IFACE=$(sh phone_collect.sh --precheck | sed -n "s/^cellular_iface: //p"); sh phone_collect.sh --phase dtc_tcp --duration 60 --tcp-host 129.154.215.71 --tcp-port 5201 --out ./sessions_real_03_tcp_active --iface "$IFACE" --enable-pixel-context --enable-signal-samples --enable-radio-events'
+su -c 'cd /data/data/com.termux/files/home/starpike-replayer && PATH=/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:$PATH; IFACE=$(sh phone_collect.sh --precheck | sed -n "s/^cellular_iface: //p"); sh phone_collect.sh --phase dtc_tcp --duration 600 --tcp-host 129.154.215.71 --tcp-port 5201 --out ./sessions_real_03_tcp_active --iface "$IFACE" --enable-pixel-context --enable-signal-samples --enable-radio-events'
 ```
 
 ```sh
 tar -czf sessions_real_03_tcp_active.tar.gz sessions_real_03_tcp_active
+```
+
+```sh
+cp sessions_real_03_tcp_active.tar.gz /sdcard/Download
 ```
 
 ### 4. Ping Active Measurement
@@ -124,7 +140,7 @@ tar -czf sessions_real_03_tcp_active.tar.gz sessions_real_03_tcp_active
 啥也不用做, 直接运行指令:
 
 ```sh
-su -c 'cd /data/data/com.termux/files/home/starpike-replayer && PATH=/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:$PATH; IFACE=$(sh phone_collect.sh --precheck | sed -n "s/^cellular_iface: //p"); sh phone_collect.sh --phase dtc_ping --duration 60 --target 129.154.215.71 --out ./sessions_real_04_ping_active --iface "$IFACE" --enable-pixel-context --enable-signal-samples --enable-radio-events'
+su -c 'cd /data/data/com.termux/files/home/starpike-replayer && PATH=/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:$PATH; IFACE=$(sh phone_collect.sh --precheck | sed -n "s/^cellular_iface: //p"); sh phone_collect.sh --phase dtc_ping --duration 600 --target 129.154.215.71 --out ./sessions_real_04_ping_active --iface "$IFACE" --enable-pixel-context --enable-signal-samples --enable-radio-events'
 ```
 
 打包 + 拷贝:
@@ -144,7 +160,7 @@ cp sessions_real_04_ping_active.tar.gz /sdcard/Download
 随后在手机上运行指令:
 
 ```sh
-su -c 'cd /data/data/com.termux/files/home/starpike-replayer && PATH=/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:$PATH; IFACE=$(sh phone_collect.sh --precheck | sed -n "s/^cellular_iface: //p"); sh phone_collect.sh --phase dtc_iperf --duration 60 --iperf-server 129.154.215.71 --out ./sessions_real_05_iperf3_active --iface "$IFACE" --enable-pixel-context --enable-signal-samples --enable-radio-events'
+su -c 'cd /data/data/com.termux/files/home/starpike-replayer && PATH=/system/bin:/system/xbin:/data/data/com.termux/files/usr/bin:$PATH; IFACE=$(sh phone_collect.sh --precheck | sed -n "s/^cellular_iface: //p"); sh phone_collect.sh --phase dtc_iperf --duration 600 --iperf-server 129.154.215.71 --out ./sessions_real_05_iperf3_active --iface "$IFACE" --enable-pixel-context --enable-signal-samples --enable-radio-events'
 ```
 
 打包 + 拷贝:
